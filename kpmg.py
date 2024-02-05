@@ -6,16 +6,14 @@
 import datetime
 import itertools
 import logging
-import os
-import re
 import time
 
 import dateutil.parser
+from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.ui import WebDriverWait, Select
-from selenium.common import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
 
 from src.spp.types import SPP_document
 
@@ -38,7 +36,7 @@ class KPMG:
 
     # Здесь нужно указывать класс фильтра и значения, которые нужно выбрать
     FILTER = {
-        'kpmg_filter_year': ['2023'], # , '2022', '2021'
+        'kpmg_filter_year': ['2024'], # , '2022', '2021'
         'kpmg_ind_path': [
             'Financial Services',
             'Infrastructure',
@@ -49,7 +47,7 @@ class KPMG:
         ]
     }
 
-    def __init__(self, webdriver: WebDriver, *args, **kwargs):
+    def __init__(self, webdriver: WebDriver, max_count_documents: int = 20, *args, **kwargs):
         """
         Конструктор класса парсера
 
@@ -60,6 +58,7 @@ class KPMG:
         self._content_document = []
 
         self.driver = webdriver
+        self.max_count_documents = max_count_documents
 
         # Логер должен подключаться так. Вся настройка лежит на платформе
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -90,19 +89,13 @@ class KPMG:
         # ========================================
         # Тут должен находится блок кода, отвечающий за парсинг конкретного источника
         # -
-        self.driver.set_page_load_timeout(40)
+        self.driver.set_page_load_timeout(50)
 
         for value1, value2 in itertools.product(self.FILTER['kpmg_ind_path'], self.FILTER['kpmg_filter_year']):
             self._initial_access_source(self.HOST, 4)
             self._parse_filtered_page(value1, value2)
-
-
-        # Логирование найденного документа
-        # self.logger.info(self._find_document_text_for_logger(document))
-
         # ---
         # ========================================
-        ...
 
     def _initial_access_source(self, url: str, delay: int = 2):
         self.driver.get(url)
@@ -119,14 +112,6 @@ class KPMG:
                 # прокручиваем страницу до конца
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(2)
-                b = self.driver.find_element(By.CLASS_NAME, "loadMore")
-                print(b.get_dom_attribute('display'), b)
-                # try:
-                #     b = self.driver.find_element(By.CLASS_NAME, "loadMore")
-                #     print(b.get_dom_attribute('display'))
-                # except:
-                #     self.logger.debug('Load all insights')
-                #     break
         except Exception as e:
             print(e)
 
@@ -145,7 +130,11 @@ class KPMG:
                 self.logger.error(e)
                 continue
 
-        for date, link in links:
+        for index, (date, link) in enumerate(links):
+            # Ограничение парсинга до установленного параметра self.max_count_documents
+            if index >= self.max_count_documents:
+                self.logger.debug(f'Max count documents reached ({self.max_count_documents})')
+                break
             self._parse_insight(date, link)
             time.sleep(2)
 
