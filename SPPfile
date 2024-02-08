@@ -1,4 +1,4 @@
-# This plugin processes SWIFT source
+# This plugin processes KPMG source
 #
 # Author:
 #	Лупашко Роман Владимирович
@@ -60,6 +60,7 @@ ENTRY KPMG content
 
 # Стандартная связка для парсеров
 ADD TimezoneSafeControl critical
+ADD CutJunkCharactersFromDocumentText critical
 ADD FilterOnlyNewDocumentWithDB critical
 ADD UploadDocumentToDB critical
 

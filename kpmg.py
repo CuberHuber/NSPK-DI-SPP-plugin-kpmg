@@ -47,7 +47,7 @@ class KPMG:
         ]
     }
 
-    def __init__(self, webdriver: WebDriver, max_count_documents: int = 20, *args, **kwargs):
+    def __init__(self, webdriver: WebDriver, max_count_documents: int = 30, *args, **kwargs):
         """
         Конструктор класса парсера
 
